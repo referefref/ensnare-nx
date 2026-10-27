@@ -1,8 +1,7 @@
 #require 'ensnare'
 require 'ensnare/controllers/helpers'
-require 'ensnare/form_tag_helper.rb'
+require 'ensnare/form_tag_helper'
 require 'rails'
-require "twitter-bootstrap-rails"
 #require "recaptcha/rails"
 require "ensnare/responses/response"
 require "ensnare/traps/trap"
@@ -24,6 +23,13 @@ module Ensnare
       ActiveSupport.on_load(:action_controller) do
         #extend Ensnare::Controllers::Helpers::ClassMethods
         include Ensnare::Controllers::Helpers::InstanceMethods
+      end
+    end
+
+    # Hidden trap parameters are added to every form (form_tag, form_for and form_with)
+    initializer 'ensnare.form_helpers' do |app|
+      ActiveSupport.on_load(:action_view) do
+        prepend Ensnare::FormHelpers
       end
     end
   end

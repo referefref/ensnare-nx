@@ -6,37 +6,32 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="Ensnare">
 <meta name="author" content="Andy Hoernecke and Scott Behrens">
-
-    
-    <%= stylesheet_link_tag "ensnare/application", :media => "all" %>
-    <%= javascript_include_tag "ensnare/application" %>
-
 <style>
-body {
-  padding-top: 60px; /* 60px to make the container go all the way to the bottom of the topbar */
-}
+/* ensnare-nx: compact stand-in for the Bootstrap 2 styles the original loaded through
+   twitter-bootstrap-rails, so the dashboard works with any asset pipeline (or none) */
+body { margin: 0; padding-top: 60px; font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: 14px; color: #333; background: #fff; }
+.navbar { position: fixed; top: 0; left: 0; right: 0; background: #1b1b1b; border-bottom: 1px solid #252525; }
+.navbar-inner .container { display: flex; align-items: center; min-height: 40px; }
+.brand { color: #fff; font-size: 20px; padding: 8px 20px 8px 0; text-decoration: none; }
+.nav { list-style: none; margin: 0; padding: 0; display: flex; }
+.nav li a { color: #999; padding: 10px 15px; display: block; text-decoration: none; }
+.nav li a:hover { color: #fff; }
+.pull-right { margin-left: auto; }
+.btn { display: inline-block; padding: 4px 12px; border: 1px solid #ccc; border-radius: 4px; background: #f5f5f5; }
+.btn-success { background: #5bb75b; color: #fff; } .btn-warning { background: #faa732; color: #fff; } .btn-danger { background: #da4f49; color: #fff; } .btn-primary { background: #006dcc; color: #fff; }
+.container { width: 1170px; max-width: 96%; margin: 0 auto; }
+.well { background: #f5f5f5; border: 1px solid #e3e3e3; border-radius: 4px; padding: 19px; margin-bottom: 20px; }
+.alert { padding: 8px 14px; margin-bottom: 20px; background: #fcf8e3; border: 1px solid #fbeed5; border-radius: 4px; color: #c09853; }
+.alert-error { background: #f2dede; border-color: #eed3d7; color: #b94a48; } .hidden { display: none; } .close { display: none; }
+.table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+.table th, .table td { padding: 8px; border-top: 1px solid #ddd; text-align: left; vertical-align: top; font-size: 13px; }
+dl.dl-horizontal dt { float: left; width: 160px; font-weight: bold; } dl.dl-horizontal dd { margin-left: 180px; }
+.nav-list { display: block; } .nav-header { font-weight: bold; text-transform: uppercase; color: #999; }
 </style>
 
 
 
-<!-- Fav and touch icons -->
-<!-- Size should be 144 x 144 pixels -->
-<%= favicon_link_tag 'apple-touch-icon-144x144-precomposed.png', :rel => 'apple-touch-icon-precomposed', :type => 'image/png', :sizes => '144x144' %>
 
-<!-- For iPhone with high-resolution Retina display: -->
-<!-- Size should be 114 x 114 pixels -->
-<%= favicon_link_tag 'apple-touch-icon-114x114-precomposed.png', :rel => 'apple-touch-icon-precomposed', :type => 'image/png', :sizes => '114x114' %>
-
-<!-- For first- and second-generation iPad: -->
-<!-- Size should be 72 x 72 pixels -->
-<%= favicon_link_tag 'apple-touch-icon-72x72-precomposed.png', :rel => 'apple-touch-icon-precomposed', :type => 'image/png', :sizes => '72x72' %>
-
-<!-- For non-Retina iPhone, iPod Touch, and Android 2.1+ devices: -->
-<!-- Size should be 57 x 57 pixels -->
-<%= favicon_link_tag 'apple-touch-icon-precomposed.png', :rel => 'apple-touch-icon-precomposed', :type => 'image/png' %>
-
-<!-- For all other devices -->
-<!-- Size should be 32 x 32 pixels -->
 </head>
 
 <body>
@@ -45,7 +40,7 @@ body {
     <div class="navbar-inner">
       <div class="container">
 
-        <a class="brand" href="http://getbootstrap.com/2.3.2/examples/starter-template.html#">Ensnare</a>
+        <a class="brand" href="#">Ensnare</a>
         <div class="nav-collapse collapse">
           <ul class="nav">
              <li class=""><%= link_to('Mode', mode_path)  %>  </li>

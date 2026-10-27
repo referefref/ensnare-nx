@@ -37,11 +37,11 @@ class Ensnare::Trap::Parameter < Ensnare::Trap::Trap
                 when :debug
                   expected = "false"
                 when :random
-                  expected =  @session.try(:[],:ensnare).try(:[],:params).try(:[],"random") 
+                  expected =  @session.try(:[],"ensnare").try(:[],"params").try(:[],"random") 
                 when :gid
-                  expected =  @session.try(:[],:ensnare).try(:[],:params).try(:[],"gid")
+                  expected =  @session.try(:[],"ensnare").try(:[],"params").try(:[],"gid")
                 when :uid
-                  expected =  @session.try(:[],:ensnare).try(:[],:params).try(:[],"uid")
+                  expected =  @session.try(:[],"ensnare").try(:[],"params").try(:[],"uid")
                 end
                 Rails.logger.debug "Checking parameter #{p}. Value #{test_param} Expected: #{expected}"
 
@@ -61,7 +61,7 @@ class Ensnare::Trap::Parameter < Ensnare::Trap::Trap
             if(test_param)
                 #test_param = @parameters.try(:[],model).try(:[],k.to_s)
                 
-                expected = @session.try(:[],:ensnare).try(:[],:params).try(:[],k.to_s).to_s
+                expected = @session.try(:[],"ensnare").try(:[],"params").try(:[],k.to_s).to_s
                 if(test_param.to_s != expected.to_s)
                     Rails.logger.debug("VIOLATION! Parameter tampering. Parameter: #{k.to_s} Observed: #{test_param.to_s} Expected: #{expected.to_s} IP:" + @request.remote_ip.to_s)
                     violations <<  log_violation(k.to_s, expected.to_s, test_param.to_s)
@@ -78,6 +78,10 @@ class Ensnare::Trap::Parameter < Ensnare::Trap::Trap
      def deep_find(key, object=self, found=nil)
         if object.respond_to?(:key?) && object.key?(key)
           return object.delete(key)
+        elsif object.respond_to?(:each_value)
+          # Hash and ActionController::Parameters (which is not Enumerable in current Rails)
+          object.each_value { |v| found = deep_find(key, v); break if found }
+          return found
         elsif object.is_a? Enumerable
           object.find { |*a| found = deep_find(key, a.last) }
           return found

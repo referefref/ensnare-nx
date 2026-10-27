@@ -1,11 +1,10 @@
-require_dependency "ensnare/application_controller"
 
 
 
 module Ensnare
   class ViolationsController < ApplicationController
-    before_filter :ensnare, :only=>:routing_error
-    skip_before_filter :check_privileges
+    before_action :ensnare, :only=>:routing_error
+    skip_before_action :check_privileges
     layout 'ensnare/application'
 
     def redirect
@@ -13,10 +12,12 @@ module Ensnare
     end
 
     def captcha
+      # The captcha response needs the recaptcha gem in the application
+      raise ActionController::RoutingError.new('Not Found') unless respond_to?(:verify_recaptcha, true)
       respond_to do |format|
         if verify_recaptcha
-          session[:ensnare] ||= {}
-          session[:ensnare][:captcha_solved] = true
+          session["ensnare"] ||= {}
+          session["ensnare"]["captcha_solved"] = true
           redirect_to main_app.root_url
           return
         else

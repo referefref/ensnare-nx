@@ -1,6 +1,6 @@
 module Ensnare
   class ApplicationController < ActionController::Base
-    before_filter :check_privileges
+    before_action :check_privileges
 
     def check_privileges
       

@@ -8,7 +8,7 @@ class Ensnare::Trap::Cookie < Ensnare::Trap::Trap
         violations = []
         
         
-        cookie_hash = @session.try(:[],:ensnare).try(:[],:cookies) || {}
+        cookie_hash = @session.try(:[],"ensnare").try(:[],"cookies") || {}
         cookie_hash.each do |k,v|
         
             if(@cookies[k.to_s] != v.to_s)
@@ -29,14 +29,14 @@ class Ensnare::Trap::Cookie < Ensnare::Trap::Trap
     def setup_cookies
         Rails.logger.debug("Setting up cookies")
 
-        @session[:ensnare] ||= {}
-        @session[:ensnare][:cookies] ||= {}
+        @session["ensnare"] ||= {}
+        @session["ensnare"]["cookies"] ||= {}
 
 
         if(@options[:cookie_names].class == Hash)
             @options[:cookie_names].each do |k,v|
                 @cookies[k.to_s] = v.to_s
-                @session[:ensnare][:cookies][k.to_s] = v.to_s
+                @session["ensnare"]["cookies"][k.to_s] = v.to_s
             end
         end
 
@@ -52,7 +52,7 @@ class Ensnare::Trap::Cookie < Ensnare::Trap::Trap
                 when :random
                     #This is set to a pre-set "random" string for now. Would be nice to have this generated on the fly
                     k= 'vnenSdjfxLgjFDSra' 
-                    v= @session[:ensnare][:cookies][k.to_s] || SecureRandom.urlsafe_base64(40)
+                    v= @session["ensnare"]["cookies"][k.to_s] || SecureRandom.urlsafe_base64(40)
                     cookies = {k => v}
                 when :google
                     
@@ -77,18 +77,18 @@ class Ensnare::Trap::Cookie < Ensnare::Trap::Trap
 
                 when :uid
                     k="uid"
-                    v= @session[:ensnare][:cookies][k.to_s] || SecureRandom.urlsafe_base64(25)
+                    v= @session["ensnare"]["cookies"][k.to_s] || SecureRandom.urlsafe_base64(25)
                     cookies =  {k => v}
 
                 when :gid
                     k="gid"
-                    v= @session[:ensnare][:cookies][k.to_s] || SecureRandom.urlsafe_base64(25)
+                    v= @session["ensnare"]["cookies"][k.to_s] || SecureRandom.urlsafe_base64(25)
                     cookies =  {k => v}
                 end
 
                 cookies.each do |key,value|
                     @cookies[key.to_s] = value.to_s
-                    @session[:ensnare][:cookies][key.to_s] = value.to_s
+                    @session["ensnare"]["cookies"][key.to_s] = value.to_s
                 end
 
             end

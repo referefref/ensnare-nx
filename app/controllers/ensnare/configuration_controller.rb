@@ -1,4 +1,3 @@
-require_dependency "ensnare/application_controller"
 
 module Ensnare
   class ConfigurationController < ApplicationController

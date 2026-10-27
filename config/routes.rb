@@ -7,7 +7,7 @@ Ensnare::Engine.routes.draw do
   get "dashboard/violations", to: "dashboard#violations"
   
   root to: "violations#redirect", :as=>:redir
-  match "violations/captcha", to: "violations#captcha", :as => 'captcha'
+  match "violations/captcha", to: "violations#captcha", :as => 'captcha', via: [:get, :post]
   
   post "configuration/change_mode", to: "configuration#change_mode", as: 'change_mode'
   

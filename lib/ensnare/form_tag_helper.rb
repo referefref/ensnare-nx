@@ -1,116 +1,111 @@
+require 'securerandom'
 
+module Ensnare
+  # Adds Ensnare's hidden trap parameters to forms.
+  #
+  # The original (Rails 3.2) wrapped form_for and form_tag with alias_method_chain.
+  # Current Rails builds the hidden tags of every form (form_tag, form_for and form_with)
+  # with the private extra_tags_for_form helper, so ensnare-nx prepends this module to
+  # ActionView::Base and adds the trap parameters there, directly after the opening <form> tag.
+  module FormHelpers
+    # Overload form_for to pass in the object name as part of the options hash
+    def form_for(record, options = {}, &block)
+      options[:html] ||= {}
 
-module ActionView
-  module Helpers
-    module FormHelper
-      #Overload form_for to pass in the object name as part of the options hash
-      def form_for_with_trap(record, options = {}, &block)
-        options[:html] ||= {}
-        
-        case record
-        when String, Symbol
-          options[:html][:object_name]  = record
-          
-        else
-          object = record.is_a?(Array) ? record.last : record
-          options[:html][:object_name]  = options[:as] || ActiveModel::Naming.param_key(object)
-        end
-        
-        
-        form_for_without_trap(record, options, &block)
-
+      case record
+      when String, Symbol
+        options[:html][:object_name] = record
+      else
+        object = record.is_a?(Array) ? record.last : record
+        options[:html][:object_name] = options[:as] || ActiveModel::Naming.param_key(object)
       end
-      
-      alias_method_chain :form_for, :trap
+
+      super(record, options, &block)
     end
 
-    module FormTagHelper
-      #Overload form_tag to insert a hidden parameter called "admin" with a value of false
-      #Assuming a real "admin" attribute is not accessible, this will throw a mass assignment
-      #error when submitted
-
-      def form_tag_with_trap(url_for_options = {}, options = {}, *parameters_for_url, &block)
-        
-        object_name = options.delete(:object_name)
-        honeypot = options.delete(:honeypot)
-        html = form_tag_without_trap(url_for_options, options, *parameters_for_url, &block)
-
-        if(Ensnare.mode == :enforce || Ensnare.mode == :log)
-        
-          #puts "url_for_options: " + url_for_options.inspect
-          #puts "options: " + options.inspect
-          #puts "paramaters_for_url: " + parameters_for_url.inspect
-          
-          object_name ||= controller_name.tableize.singularize.to_s
-          
-
-          session[:ensnare] ||= {}
-          session[:ensnare][:params] ||= {}
-
-          
-            # :admin => this sets a cookie named admin with a boolean value set to false
-            # :debug => this sets a cookie named debug with a boolean value set to false
-            # :random => this cookie generates a random N character cookie with a random encrypted value
-            # :uid => this sets a series of parameters that look like UIDs and GIDs
-
-          if(trap = Ensnare.enabled_traps.find{|trap| trap[:type] == :parameter})
-            predefined_parameters = trap.try(:[],:options).try(:[],:predefined_parameters) || []
-            predefined_parameters.each do |p|
-               k = v = nil
-              case p
-              when :admin
-                k="admin"
-                v="false"
-              when :debug
-                k="debug"
-                v="false"
-              when :random
-                k="random"
-                v= session[:ensnare][:params][k.to_s] || SecureRandom.hex
-              when :gid
-                k="gid"
-                v= session[:ensnare][:params][k.to_s] || Random.rand(100000)
-              when :uid
-                k="uid"
-                v= session[:ensnare][:params][k.to_s] || Random.rand(100000)
-              end
-              if( !k.nil? && !p.nil? )                
-                session[:ensnare][:params][k.to_s] = v.to_s
-                trap_parameter = text_field_tag(object_name.to_s+"[#{k.to_s}]", v.to_s, options.except(:class).stringify_keys.merge({:id=>object_name.to_s+"_#{k.to_s}"}).update("type" => "hidden"))
-                if block_given?
-                  html.insert(html.index('>')+1, trap_parameter)
-                  #html.insert(html.index('</form>'), trap_parameter)
-                else
-                  html = trap_parameter+html
-                end   
-              end
-            end
-
-            parameter_names = trap.try(:[],:options).try(:[],:parameter_names) || {}
-            parameter_names.each do |k,v|
-              if(v.class == Method)
-                v = session[:ensnare][:params][k.to_s] || v.call 
-              end
-              session[:ensnare][:params][k.to_s] = v
-              trap_parameter = text_field_tag(object_name.to_s+"[#{k.to_s}]", v.to_s, options.except(:class).stringify_keys.merge({:id=>object_name.to_s+"_#{k.to_s}"}).update("type" => "hidden"))
-              if block_given?
-                html.insert(html.index('>')+1, trap_parameter)
-                #html.insert(html.index('</form>'), trap_parameter)
-              else
-                html = trap_parameter+html
-              end
-              
-            end
-          end
-        end
-        #end
-        html
+    # form_with: use the scope, or the model's parameter key, as the object name
+    def form_with(model: false, scope: nil, url: nil, format: nil, **options, &block)
+      object = model.is_a?(Array) ? model.last : model
+      object_name = scope || (object ? ActiveModel::Naming.param_key(object) : nil)
+      if object_name
+        options[:html] = (options[:html] || {}).merge(object_name: object_name)
       end
-      alias_method_chain :form_tag, :trap
+      super(model: model, scope: scope, url: url, format: format, **options, &block)
+    end
 
     private
 
-    
+    # Called for every form (form_tag, form_for and form_with) before the <form> tag is
+    # rendered; its result follows the opening tag.
+    def extra_tags_for_form(html_options)
+      object_name = html_options.delete("object_name") || html_options.delete(:object_name)
+      html_options.delete("honeypot")
+      html_options.delete(:honeypot)
+      html = super(html_options)
+      traps = ensnare_trap_parameters(object_name)
+      # Rails returns a plain empty string for GET forms; its own output is safe
+      traps.blank? ? html : html.to_s.html_safe + traps
+    end
+
+    # Insert hidden parameters (for example "admin" with a value of false).
+    # Assuming a real "admin" attribute is not accessible, a changed value
+    # shows that the request was tampered with.
+    def ensnare_trap_parameters(object_name)
+      return nil unless (Ensnare.mode == :enforce || Ensnare.mode == :log)
+      trap = (Ensnare.enabled_traps || []).find { |t| t[:type] == :parameter }
+      return nil unless trap
+
+      object_name ||= controller_name.tableize.singularize.to_s
+
+      session["ensnare"] ||= {}
+      session["ensnare"]["params"] ||= {}
+      stored = session["ensnare"]["params"]
+      html = ActiveSupport::SafeBuffer.new
+
+      # :admin => hidden parameter named admin with a value of false
+      # :debug => hidden parameter named debug with a value of false
+      # :random => hidden parameter named random with a random hex value
+      # :uid / :gid => parameters that look like UIDs and GIDs
+      predefined_parameters = trap.try(:[], :options).try(:[], :predefined_parameters) || []
+      predefined_parameters.each do |p|
+        k = v = nil
+        case p
+        when :admin
+          k = "admin"
+          v = "false"
+        when :debug
+          k = "debug"
+          v = "false"
+        when :random
+          k = "random"
+          v = stored[k] || SecureRandom.hex
+        when :gid
+          k = "gid"
+          v = stored[k] || Random.rand(100000)
+        when :uid
+          k = "uid"
+          v = stored[k] || Random.rand(100000)
+        end
+        if !k.nil?
+          stored[k] = v.to_s
+          html << ensnare_hidden_field(object_name, k, v)
+        end
+      end
+
+      parameter_names = trap.try(:[], :options).try(:[], :parameter_names) || {}
+      parameter_names.each do |k, v|
+        if v.is_a?(Method) || v.is_a?(Proc)
+          v = stored[k.to_s] || v.call
+        end
+        stored[k.to_s] = v.to_s
+        html << ensnare_hidden_field(object_name, k, v)
+      end
+
+      html
+    end
+
+    def ensnare_hidden_field(object_name, key, value)
+      tag(:input, type: "hidden", name: "#{object_name}[#{key}]", value: value.to_s, id: "#{object_name}_#{key}")
     end
   end
 end
